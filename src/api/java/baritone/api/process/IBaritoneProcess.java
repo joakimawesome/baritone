@@ -48,7 +48,7 @@ public interface IBaritoneProcess {
     /**
      * Would this process like to be in control?
      *
-     * @return Whether or not this process would like to be in contorl.
+     * @return Whether or not this process would like to be in control.
      */
     boolean isActive();
 
@@ -103,7 +103,7 @@ public interface IBaritoneProcess {
      */
     default String displayName() {
         if (!isActive()) {
-            // i love it when impcat's scuffed HUD calls displayName for inactive processes for 1 tick too long
+            // i love it when impact's scuffed HUD calls displayName for inactive processes for 1 tick too long
             // causing NPEs when the displayname relies on fields that become null when inactive
             return "INACTIVE";
         }
