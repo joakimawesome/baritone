@@ -69,7 +69,11 @@ public interface IBaritone {
      * @see IExploreProcess
      */
     IExploreProcess getExploreProcess();
-
+    /**
+     * @return The {@link IGatherProcess} instance
+     * @see IGatherProcess
+     */
+    IGatherProcess getGatherProcess();
     /**
      * @return The {@link IFarmProcess} instance
      * @see IFarmProcess
