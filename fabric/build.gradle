@@ -27,7 +27,7 @@ archivesBaseName = archivesBaseName + "-fabric"
 minecraft {
     fabric()
     runs.client = {
-        jvmArgs.add("-XstartOnFirstThread")
+//        jvmArgs.add("-XstartOnFirstThread")
     }
 }
 
