@@ -17,7 +17,16 @@
 
 package baritone.api.process;
 
+import baritone.api.cache.IWaypoint;
+
 public interface IGatherProcess extends IBaritoneProcess {
+    /**
+     * Begin to gather specified crafting material.
+     *
+     * @param source The waypoint name of material's source
+     */
+    void gather(IWaypoint[] sources, String type);
+}
 //    /**
 //     * Begin to gather crafting materials at nearby cluster.
 //     *
@@ -26,25 +35,18 @@ public interface IGatherProcess extends IBaritoneProcess {
 //     */
 //    void gatherByName(MaterialType type, String name);
 
-    /**
-     * Begin to gather crafting material at nearby cluster.
-     *
-     * @param type  The type of material to gather from cluster
-     * @param level The material's level requirement
-     */
-     void gather(String type, String level);
+//    /**
+//     * Begin to gather crafting material at nearby cluster.
+//     *
+//     * @param type  The type of material to gather from cluster
+//     * @param level The material's level requirement
+//     */
+//     void gather(String type, String level);
 
 //     /**
 //     * Begin gathering nearby cluster.
 //     */
 //    default void gather() {gather(null, -1);}
-    /**
-     * Begin gathering designated material.
-     *
-     * @param type The type of material to gather from cluster
-     * @param level The
-     */
-    default void gather(String type, String level) {gather(type, level);}
 
 //    /**
 //     *
@@ -52,4 +54,3 @@ public interface IGatherProcess extends IBaritoneProcess {
 //     * @param name
 //     */
 //    default void gatherByName(MaterialType type, String name) {gatherByName(type, name);}
-}

@@ -6,11 +6,12 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.datatypes.ForWaypoints;
 import baritone.api.command.exception.CommandException;
+import baritone.api.command.exception.CommandInvalidStateException;
 import baritone.api.command.helpers.TabCompleteHelper;
-import baritone.api.utils.BetterBlockPos;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 public class GatherCommand extends Command {
@@ -32,8 +33,12 @@ public class GatherCommand extends Command {
         if (args.has(1)) {
             level = args.getString();
         }
-        baritone.getGatherProcess().gather(type, level);
-        logDirect("Gathering");
+        IWaypoint[] source = ForWaypoints.getWaypointsByName(baritone, type + level);
+        if (source.length == 0) {
+            throw new CommandInvalidStateException("No sources found for specified material");
+        }
+        baritone.getGatherProcess().gather(source, type);
+        logDirect("Gathering lvl. " + level + " " + type.toUpperCase() + ". . .");
     }
 
     @Override
@@ -41,12 +46,18 @@ public class GatherCommand extends Command {
         if (args.hasExactlyOne()) {
             // Tab completion for the first argument (material type)
             return new TabCompleteHelper()
-                    .append(Stream.of("wood", "paper", "ingot", "gem", "string", "grain", "oil", "meat"))
+                    .append(Stream.of("ingot", "gem", "wood", "paper", "string", "grains", "oil", "meat"))
+//                    .append(Type.getAllNames())
+                    .sortAlphabetically()
+                    .filterPrefix(args.getString())
+                    .stream();
         } else if (args.has(2)) {
+            args.get();
             // Tab completion for the second argument (level)
-            return Stream.of("1", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110")
-                    .filter(s -> s.startsWith(args.getString()))
-                    .sorted();
+            return new TabCompleteHelper()
+                    .append(Stream.of("1", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110"))
+                    .filterPrefix(args.getString())
+                    .stream();
         }
         return Stream.empty();
     }
@@ -64,7 +75,41 @@ public class GatherCommand extends Command {
                 "Usage:",
                 "> gather <material_type> <material_level> - gather crafting material specified by required proficiency level."
                 // TODO: "> gather <material_type> <material_name> - gather by source name.",
-                // TODO: "> gather <material_type> - gathers from nearest material cluster.",
+                // TODO: "> gather <material_type> - gathers from nearest corresponding material cluster.",
         );
     }
 }
+
+//    private enum Type {
+//        INGOT("ingot"),
+//        GEM("gem"),
+//        WOOD("wood"),
+//        PAPER("paper"),
+//        STRING("string"),
+//        GRAINS("grains"),
+//        OIL("oil"),
+//        MEAT("meat");
+//        private final String[] names;
+//
+//        Type(String... names) {
+//            this.names = names;
+//        }
+//
+//        public static Type getByName(String name) {
+//            for (Type type : Type.values()) {
+//                for (String alias : type.names) {
+//                    if (alias.equalsIgnoreCase(name)) {
+//                        return type;
+//                    }
+//                }
+//            }
+//            return null;
+//        }
+//
+//        public static String[] getAllNames() {
+//            Set<String> names = new HashSet<>();
+//            for (Type type : Type.values()) {
+//                names.addAll(Arrays.asList(type.names));
+//            }
+//            return names.toArray(new String[0]);
+//        }

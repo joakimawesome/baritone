@@ -1340,6 +1340,11 @@ public final class Settings {
     public final Setting<Boolean> notificationOnPathComplete = new Setting<>(true);
 
     /**
+     * Desktop notification on gather fail
+     */
+    public final Setting<Boolean> notificationOnGatherFail = new Setting<>(true);
+
+    /**
      * Desktop notification on farm fail
      */
     public final Setting<Boolean> notificationOnFarmFail = new Setting<>(true);
