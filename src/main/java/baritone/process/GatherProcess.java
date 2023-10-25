@@ -19,7 +19,6 @@ package baritone.process;
 
 import baritone.Baritone;
 import baritone.api.cache.IWaypoint;
-import baritone.api.command.datatypes.ForWaypoints;
 import baritone.api.pathing.goals.*;
 import baritone.api.process.IGatherProcess;
 import baritone.api.process.PathingCommand;
@@ -27,13 +26,12 @@ import baritone.api.process.PathingCommandType;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
-import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
 import net.minecraft.core.BlockPos;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -41,8 +39,8 @@ public final class GatherProcess extends BaritoneProcessHelper implements IGathe
     private boolean active;
     private List<BlockPos> sourceLocations;
     private String type;
-    private int tickCount;
-    private int COOLDOWN_TIME = 2400;
+    private int tickCount = 0;
+    private final HashMap<BlockPos, Integer> cooldownMap = new HashMap<>();
 
     public GatherProcess(Baritone baritone) {
         super(baritone);
@@ -62,34 +60,41 @@ public final class GatherProcess extends BaritoneProcessHelper implements IGathe
         return active;
     }
 
-    private boolean readyForGather(BlockPos pos, int tickNextGather) {
-        // TODO: Check if 2400 ticks had passed since gather
-        return tickCount >= tickNextGather;
+    private boolean readyForGather(BlockPos pos) {
+        int COOLDOWN = 800;
+        Integer tickGathered = cooldownMap.getOrDefault(pos, -COOLDOWN);
+        return tickCount - tickGathered >= COOLDOWN;
     }
 
     @Override
     public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
-        // TODO: handle 2400 tick cool-down
-//        ArrayList<BlockPos, > onCooldown = new ArrayList<>;
-
+        tickCount++;
         baritone.getInputOverrideHandler().clearAllKeys();
-        for (BlockPos pos : sourceLocations) {
+        List<BlockPos> readyLocations = sourceLocations.stream().filter(this::readyForGather).toList(); // filter out locations on cd
+        if (readyLocations.isEmpty()) {
+            if (tickCount % 200 == 0) {
+                logDirect(cooldownMap.toString());
+                logDirect(String.format("%ss",tickCount / 20));
+            }
+            return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
+        }
+        for (BlockPos pos : readyLocations) {
             Optional<Rotation> rot = RotationUtils.reachable(ctx, pos);
             if (rot.isPresent() && isSafeToCancel) {
                 baritone.getLookBehavior().updateTarget(rot.get(), true);
                 if (ctx.isLookingAt(pos)) {
-                    logDirect("Clicking. . .");
+                    logDirect("Gathering...");
                     if (isRightClick(this.type)) {
                         baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
                     } else {
                         baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_LEFT, true);
                     }
-                    sourceLocations.remove(pos); // adjust after handling cool-down
+                    cooldownMap.put(pos, tickCount); // place location on cooldown
                 }
             return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
             }
         }
-        Goal goal = new GoalComposite(sourceLocations.stream().map(this::createGoal).toArray(Goal[]::new));
+        Goal goal = new GoalComposite(readyLocations.stream().map(this::createGoal).toArray(Goal[]::new));
         if (calcFailed) {
             logDirect("Gathering failed");
             if (Baritone.settings().notificationOnGatherFail.value) {
@@ -100,7 +105,7 @@ public final class GatherProcess extends BaritoneProcessHelper implements IGathe
             }
             return new PathingCommand(goal, PathingCommandType.CANCEL_AND_SET_GOAL);
         }
-        return new PathingCommand(goal, PathingCommandType.SET_GOAL_AND_PATH);
+        return new PathingCommand(goal, PathingCommandType.REVALIDATE_GOAL_AND_PATH);
     }
 
     public Goal createGoal(BlockPos pos) {
@@ -113,7 +118,6 @@ public final class GatherProcess extends BaritoneProcessHelper implements IGathe
             || "grains".equals(type)
             || "meat".equals(type);
     }
-
 
     @Override
     public void onLostControl() {
